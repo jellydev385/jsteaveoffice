@@ -2,7 +2,7 @@
 
 import { Layout } from "@/components/layout/Layout";
 
-const Index = () => {
+const Home = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="text-center">
@@ -17,4 +17,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Home;
