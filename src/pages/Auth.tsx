@@ -1,14 +1,20 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, signup, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -17,30 +23,79 @@ export function Auth() {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
 
+  // Get the redirect path from location state, default to dashboard
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/dashboard";
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // TODO: Implement actual login logic with Supabase
-    console.log("Login attempted with:", loginEmail);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate("/");
-    }, 1000);
+    
+    const result = await login(loginEmail, loginPassword);
+    
+    if (result.success) {
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully logged in.",
+      });
+      navigate(from, { replace: true });
+    } else {
+      toast({
+        title: "Login failed",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (signupPassword !== signupConfirmPassword) {
-      alert("Passwords do not match");
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
       return;
     }
+
+    if (signupPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
-    // TODO: Implement actual signup logic with Supabase
-    console.log("Signup attempted with:", signupEmail);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate("/");
-    }, 1000);
+    
+    const result = await signup(signupEmail, signupPassword, signupName);
+    
+    if (result.success) {
+      toast({
+        title: "Account created!",
+        description: "Welcome to TechCorp. You are now logged in.",
+      });
+      navigate(from, { replace: true });
+    } else {
+      toast({
+        title: "Signup failed",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -64,7 +119,7 @@ export function Auth() {
         <Card className="border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
           <CardHeader className="text-center pb-2">
             <div className="mx-auto mb-4 w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
-              <span className="text-xl font-bold text-primary-foreground">B</span>
+              <span className="text-xl font-bold text-primary-foreground">T</span>
             </div>
             <CardTitle className="text-2xl font-bold">Welcome</CardTitle>
             <CardDescription>Sign in to your account or create a new one</CardDescription>
@@ -91,6 +146,7 @@ export function Auth() {
                         onChange={(e) => setLoginEmail(e.target.value)}
                         className="pl-10"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -106,6 +162,7 @@ export function Auth() {
                         onChange={(e) => setLoginPassword(e.target.value)}
                         className="pl-10"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -135,6 +192,7 @@ export function Auth() {
                         onChange={(e) => setSignupName(e.target.value)}
                         className="pl-10"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -150,6 +208,7 @@ export function Auth() {
                         onChange={(e) => setSignupEmail(e.target.value)}
                         className="pl-10"
                         required
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -166,6 +225,7 @@ export function Auth() {
                         className="pl-10"
                         required
                         minLength={6}
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -182,6 +242,7 @@ export function Auth() {
                         className="pl-10"
                         required
                         minLength={6}
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
